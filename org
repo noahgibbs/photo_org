@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require_relative "photo_repo"
+
+options = {
+  out: ".",
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: org [options] [directory]"
+
+  opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output") do |o|
+    options[:out] = o
+  end
+end.parse!
+
+if ARGV.size < 1
+  STDERR.puts "You must specify where to find the directories of photos"
+end
+
+options[:photos] = ARGV[0]
+
+repo = PhotoRepo.new
+repo.ingest(options[:photos])
+
