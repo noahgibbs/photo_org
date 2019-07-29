@@ -5,6 +5,8 @@ require_relative "photo_repo"
 
 options = {
   out: ".",
+  tag_spec: "+1",
+  link_type: :symbolic,
 }
 
 OptionParser.new do |opts|
@@ -12,6 +14,22 @@ OptionParser.new do |opts|
 
   opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output") do |o|
     options[:out] = o
+  end
+
+  opts.on("-t TAGSPEC", "--tag-spec TAGSPEC", "Tag specification, use +tag1 -tag2 +tag3 +1 -0") do |t|
+    options[:tag_spec] = t
+  end
+
+  opts.on("--link-type TYPE", "Link type: symbolic(s) or hard(h) or test(t)") do |t|
+    if ["s", "symbolic"].include?(t)
+      options[:link_type] = :symbolic
+    elsif ["h", "hard"].include?(t)
+      options[:link_type] = :hard
+    elsif ["t", "test"].include?(t)
+      options[:link_type] = :test
+    else
+      raise "Unrecognized link type: #{t.inspect}; can be 'symbolic', 's', 'hard', 'h', 'test' or 't'"
+    end
   end
 end.parse!
 
@@ -21,6 +39,46 @@ end
 
 options[:photos] = ARGV[0]
 
+puts "Photo dir: #{options[:photos].inspect}"
+puts "Current dir: #{Dir.cwd.inspect}"
+puts "Output dir: #{options[:out].inspect}"
+
 repo = PhotoRepo.new
 repo.ingest(options[:photos])
 
+def tag_spec_to_tags(tag_spec)
+  required = []
+  disallowed = []
+
+  tokens = tag_spec.split(/([-+ ])/).map(&:strip)
+  tokens.each_slice(2) do |op, token|
+    if op == "+"
+      required.push token
+    elsif op == "-"
+      disallowed.push token
+    else
+      raise "Unexpected operation (not single +/-) in tag spec: #{tag_spec.inspect}!"
+    end
+  end
+
+  return required, disallowed
+end
+
+req, dis = tag_spec_to_tags options[:tag_spec]
+
+repo.filter(required: req, disallowed: dis)
+
+repo.each_photo do |filename, info|
+  old_name = filename
+  new_name = "#{options[:out]}/#{info[:basename]}"
+
+  if options[:link_type] == :symbolic
+    File.symlink(old_name, new_name)
+  elsif options[:link_type] == :hard
+    File.link(old_name, new_name)
+  elsif options[:link_type] == :test
+    puts "Would make link: #{new_name.inspect} -> #{old_name.inspect}"
+  else
+    raise "Internal error! Unknown link type: #{options[:link_type].inspect}!"
+  end
+end
