@@ -79,10 +79,8 @@ class PhotoRepo
 
   def each_photo
     @photos.each do |filename, info|
-      dis = info[:tags] & @filter[:disallowed]
-      if dis.empty?
-        req = info[:tags] & @filter[:required]
-        unless req.empty?
+      if @filter[:disallowed].empty? || (info[:tags] & @filter[:disallowed]).empty?
+        if @filter[:required].empty? || !(info[:tags] & @filter[:required]).empty?
           yield(filename, info)
         end
       end
