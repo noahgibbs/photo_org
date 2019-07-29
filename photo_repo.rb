@@ -1,3 +1,5 @@
+require "date"
+
 class PhotoRepo
   def initialize
     @photos = {}
@@ -16,11 +18,11 @@ class PhotoRepo
     name.scan(/_(\w+)_/).flatten(1)
   end
 
-  def self.file_parse(name)
-    name = File.basename(name)  # No extension, also cut off (1), (2), etc at end
+  def self.file_parse(filename)
+    name = File.basename(filename)  # No extension, also cut off (1), (2), etc at end
 
     # Default to file-create time if we don't find a better date.
-    date = File.ctime
+    date = File.ctime(filename)
 
     # Default to no tags
     tags = []
@@ -50,17 +52,18 @@ class PhotoRepo
   end
 
   def ingest(dir, tags: [])
+    puts "Ingest dir: #{dir.inspect}, tags: #{tags.inspect}"
     Dir["#{dir}/*"].each do |file|
       final = file.split("/")[-1]
 
       if File.directory?(file)
         new_tags = PhotoRepo.tag_parse(final)
-        ingest(file, tags | new_tags)
+        ingest(file, tags: tags | new_tags)
         next
       end
 
       # Ingest the file, not a directory
-      date, new_tags = PhotoRepo.file_parse(final)
+      date, new_tags = PhotoRepo.file_parse(file)
       @photos[file] = {
         tags: (tags | new_tags).sort,
         date: date,

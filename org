@@ -35,12 +35,13 @@ end.parse!
 
 if ARGV.size < 1
   STDERR.puts "You must specify where to find the directories of photos"
+  exit 1
 end
 
 options[:photos] = ARGV[0]
 
 puts "Photo dir: #{options[:photos].inspect}"
-puts "Current dir: #{Dir.cwd.inspect}"
+puts "Current dir: #{Dir.pwd.inspect}"
 puts "Output dir: #{options[:out].inspect}"
 
 repo = PhotoRepo.new
