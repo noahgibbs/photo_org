@@ -3,6 +3,34 @@
 require "optparse"
 require_relative "photo_repo"
 
+# Normally a tag spec is an alternation of operation (plus or minus) with token (a string.)
+# Strings preceded by a plus are required, while strings preceded by a minus are excluded.
+# Each photo has a list of tags, and to match they have to have all required tags and no
+# excluded tags. The virtual tags "1" and "0" are included to mean "always" and "never"
+# respectively - so "+1" means "match anything regardless of tags".
+#
+# Example tag spec: "+dogs+cows-william-barry"
+def tag_spec_to_tags(tag_spec)
+  required = []
+  disallowed = []
+
+  tokens = tag_spec.split(/([-+ ])/).map(&:strip)
+  tokens.shift if tokens[0] == ""
+  #STDERR.puts "Tokens: #{tokens.inspect}"
+  tokens.each_slice(2) do |op, token|
+    if op == "+"
+      required.push token unless token == "1"
+    elsif op == "-"
+      disallowed.push token unless token == "0"
+    else
+      raise "Unexpected operation #{op.inspect} (not single +/-) in tag spec: #{tag_spec.inspect}!"
+    end
+  end
+
+  #STDERR.puts "tag_spec_to_tags: spec: #{tag_spec.inspect}, required: #{required.inspect}, disallowed: #{disallowed.inspect}"
+  return required, disallowed
+end
+
 options = {
   out: ".",
   tag_spec: nil,
@@ -17,9 +45,11 @@ OptionParser.new do |opts|
   opts.banner = <<USAGE
 Usage: repo_mod [options] [directory]
 
-There can only be a single output directory, but any number of input (ingest) dirs.
-Options are remembered from run to run for each output directory, and filters and
-input directories are added to the current ones.
+There can only be a single output directory, but any number
+of input (ingest) dirs. Options are remembered from run to
+run for each output directory, and filters and input
+directories are added to the current ones.
+
 USAGE
 
   opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output, default is current dir") do |o|
@@ -64,34 +94,6 @@ end
 
 if options[:link_type]
   repo.set_link_type(options[:link_type])
-end
-
-# Normally a tag spec is an alternation of operation (plus or minus) with token (a string.)
-# Strings preceded by a plus are required, while strings preceded by a minus are excluded.
-# Each photo has a list of tags, and to match they have to have all required tags and no
-# excluded tags. The virtual tags "1" and "0" are included to mean "always" and "never"
-# respectively - so "+1" means "match anything regardless of tags".
-#
-# Example tag spec: "+dogs+cows-william-barry"
-def tag_spec_to_tags(tag_spec)
-  required = []
-  disallowed = []
-
-  tokens = tag_spec.split(/([-+ ])/).map(&:strip)
-  tokens.shift if tokens[0] == ""
-  #STDERR.puts "Tokens: #{tokens.inspect}"
-  tokens.each_slice(2) do |op, token|
-    if op == "+"
-      required.push token unless token == "1"
-    elsif op == "-"
-      disallowed.push token unless token == "0"
-    else
-      raise "Unexpected operation #{op.inspect} (not single +/-) in tag spec: #{tag_spec.inspect}!"
-    end
-  end
-
-  #STDERR.puts "tag_spec_to_tags: spec: #{tag_spec.inspect}, required: #{required.inspect}, disallowed: #{disallowed.inspect}"
-  return required, disallowed
 end
 
 repo.update_cache

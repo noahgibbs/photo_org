@@ -8,7 +8,7 @@ require "json"
 # Various filters and settings are stored there, which makes it straightforward to update the
 # output repo when the input directories of photos are updated.
 class PhotoRepo
-  INTERNAL_FIELDS = ["ingest_dirs", "photos", "tags", "filters", "link_type"]
+  INTERNAL_FIELDS = ["ingest_dirs", "photos", "tags", "filter", "link_type"]
   LINK_ALIASES = {
     "h" => "hard",
     "hard" => "hard",
@@ -39,7 +39,7 @@ class PhotoRepo
 
     @filter = {
       "required" => [],
-      "disallowed" [],
+      "disallowed" => [],
     }
 
     if File.exist?("#{output_dir}/.prepo_cache.json")
@@ -147,8 +147,8 @@ class PhotoRepo
   end
 
   def add_filter(required: [], disallowed: [])
-    @filter["required"].concat(required)
-    @filter["disallowed"].concat(disallowed)
+    @filter["required"] |= required
+    @filter["disallowed"] |= disallowed
   end
 
   def set_required(new_req)
@@ -175,7 +175,7 @@ class PhotoRepo
   end
 
   def update_links
-    repo.each_photo do |filename, info|
+    each_photo do |filename, info|
       old_name = filename
       new_name = "#{options[:out]}/#{info[:basename]}"
 
@@ -196,14 +196,16 @@ class PhotoRepo
   # Does the directory's mod date change when a new file is added?
   # Not sure about using that to use cached state instead of reloading...
   def update_cache
+    puts "Updating cache..."
     @ingest_dirs.each do |i|
       ingest(i)
     end
 
     # Only write out settings cache if the program loaded successfully
     if @successful_load
-      File.open("#{@out_dir}/.prepo_cache", "w") do |f|
-        f.print(internal_state)
+      puts "Saving cache to #{@out_dir}/.prepo_cache.json"
+      File.open("#{@out_dir}/.prepo_cache.json", "w") do |f|
+        f.print(JSON.dump internal_state)
       end
     end
   end
