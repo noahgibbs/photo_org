@@ -19,3 +19,9 @@ specify that certain tags are mandatory (only those photos) or
 excluded (not those photos.) The organiser can then produce a
 directory of links to the appropriate photos suitable for a
 screensaver program or a directory of desktop images.
+
+## Saved Incantation for Later Implementation Work:
+
+* for file in *; do SetFile -m "$(exiftool -p '$CreateDate' -d '%m/%d/%Y %H:%M:%S'"$file")""$file"; done
+
+Related: use exiftool?

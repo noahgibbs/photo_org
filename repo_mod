@@ -5,50 +5,66 @@ require_relative "photo_repo"
 
 options = {
   out: ".",
-  tag_spec: "+1",
-  link_type: :symbolic,
+  tag_spec: nil,
+  ingest_dirs: [],
+  link_type: nil,
 }
 
 # TODO: detect duplicate filenames - don't overwrite
 # TODO: UI, possibly in new executable
 
 OptionParser.new do |opts|
-  opts.banner = "Usage: org [options] [directory]"
+  opts.banner = <<USAGE
+Usage: repo_mod [options] [directory]
 
-  opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output") do |o|
+There can only be a single output directory, but any number of input (ingest) dirs.
+Options are remembered from run to run for each output directory, and filters and
+input directories are added to the current ones.
+USAGE
+
+  opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output, default is current dir") do |o|
     options[:out] = o
   end
 
-  opts.on("-t TAGSPEC", "--tag-spec TAGSPEC", "Tag specification, use +tag1 -tag2 +tag3 +1 -0") do |t|
+  opts.on("-t TAGSPEC", "--tag-spec TAGSPEC", "Tag specification, use +tag1 -tag2 +tag3 +1 -0 or CLEAR to clear tags") do |t|
     options[:tag_spec] = t
   end
 
-  opts.on("--link-type TYPE", "Link type: symbolic(s) or hard(h) or test(t)") do |t|
-    if ["s", "symbolic"].include?(t)
-      options[:link_type] = :symbolic
-    elsif ["h", "hard"].include?(t)
-      options[:link_type] = :hard
-    elsif ["t", "test"].include?(t)
-      options[:link_type] = :test
-    else
-      raise "Unrecognized link type: #{t.inspect}; can be 'symbolic', 's', 'hard', 'h', 'test' or 't'"
-    end
+  opts.on("-i DIR", "--ingest DIR", "Add a directory to always link photos from or -i CLEAR to clear dirs") do |i|
+    options[:ingest_dirs] << i
+  end
+
+  opts.on("--link-type TYPE", "Link type: symbolic(s) or hard(h) or test(t), default is symbolic") do |t|
+    options[:link_type] = t
   end
 end.parse!
 
-if ARGV.size < 1
-  STDERR.puts "You must specify where to find the directories of photos"
-  exit 1
-end
-
-options[:photos] = ARGV[0]
-
-puts "Photo dir: #{options[:photos].inspect}"
 puts "Current dir: #{Dir.pwd.inspect}"
 puts "Output dir: #{options[:out].inspect}"
 
-repo = PhotoRepo.new
-repo.ingest(options[:photos])
+repo = PhotoRepo.new(options[:out])
+
+if options[:ingest_dirs] == ["CLEAR"]
+  repo.clear_ingest
+else
+  options[:ingest_dirs].each do |i|
+    repo.always_ingest i
+  end
+end
+
+if options[:tag_spec]
+  if options[:tag_spec] == "CLEAR"
+    repo.set_required([])
+    repo.set_disallowed([])
+  else
+    req, dis = tag_spec_to_tags options[:tag_spec]
+    repo.add_filter(required: req, disallowed: dis)
+  end
+end
+
+if options[:link_type]
+  repo.set_link_type(options[:link_type])
+end
 
 # Normally a tag spec is an alternation of operation (plus or minus) with token (a string.)
 # Strings preceded by a plus are required, while strings preceded by a minus are excluded.
@@ -78,21 +94,5 @@ def tag_spec_to_tags(tag_spec)
   return required, disallowed
 end
 
-req, dis = tag_spec_to_tags options[:tag_spec]
-
-repo.filter(required: req, disallowed: dis)
-
-repo.each_photo do |filename, info|
-  old_name = filename
-  new_name = "#{options[:out]}/#{info[:basename]}"
-
-  if options[:link_type] == :symbolic
-    File.symlink(old_name, new_name)
-  elsif options[:link_type] == :hard
-    File.link(old_name, new_name)
-  elsif options[:link_type] == :test
-    puts "Would make link: #{new_name.inspect} -> #{old_name.inspect}"
-  else
-    raise "Internal error! Unknown link type: #{options[:link_type].inspect}!"
-  end
-end
+repo.update_cache
+repo.update_links
