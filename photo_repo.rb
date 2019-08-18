@@ -270,7 +270,7 @@ class PhotoRepo
       File.unlink(link_filename)
     end
 
-    reordered(matching_photos).each do |(filename, info), index|
+    reordered(matching_photos).each.with_index do |(filename, info), index|
       old_name = filename
       extension = File.extname(filename)
       new_name = "#{@out_dir}/photo_#{index}#{extension}"
