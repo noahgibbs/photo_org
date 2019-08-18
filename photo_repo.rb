@@ -67,21 +67,30 @@ class PhotoRepo
   def self.tag_parse(name)
     return [] if name.strip == ""
 
-    name.scan(/_(\w+)_/).flatten(1).map(&:downcase)
+    scanned = name.scan(/\_([^_]+)\_/)
+
+    name.scan(/\_([^_]+)\_/).flatten(1).map(&:downcase)
   end
 
   def self.file_parse(filename)
-    name = File.basename(filename)  # No extension, also cut off (1), (2), etc at end
+    date, tags = filename_parse(filename)
 
     # Default to file-create time if we don't find a better date.
-    date = File.ctime(filename)
+    date ||= File.ctime(filename)
+
+    return date, tags
+  end
+
+  def self.filename_parse(filename)
+    name = File.basename(filename)  # No extension, also cut off (1), (2), etc at end
+    date = nil
 
     # Default to no tags
     tags = []
 
-    # Certain name formats contain only random numbers or serial numbers and we can ignore them.
-    return date, tags if name =~ /^\d+$/
-    return date, tags if name =~ /^IMAG\d+$/
+    # Certain name formats contain only (or start with) random numbers or serial numbers and we can ignore them.
+    name = $' if name =~ /^(\d|_)+ ?/
+    name = $' if name =~ /^IMAG\d+/
 
     if name =~ /^(\d{4}-\d{2}-\d{2})/
       # Starts with a date

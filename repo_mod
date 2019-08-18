@@ -66,6 +66,15 @@ USAGE
   end
 end.parse!
 
+# No -o specified? One arg? It's a directory? Treat it as the output directory.
+if ARGV.size == 1 && File.exist?(ARGV[0]) && options[:out] == "."
+  options[:out] = ARGV.pop
+end
+
+unless ARGV.empty?
+  raise "Unexpected argument(s): #{ARGV.inspect}!"
+end
+
 puts "Current dir: #{Dir.pwd.inspect}"
 puts "Output dir: #{options[:out].inspect}"
 

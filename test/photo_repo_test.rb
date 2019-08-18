@@ -6,4 +6,9 @@ class PhotoRepoTest < Minitest::Test
     assert_equal ["noah"], repo.filter["required"]
     assert_equal [], repo.filter["disallowed"]
   end
+
+  def test_file_parse
+    date, tags = PhotoRepo.filename_parse("100_1213 _baby nipples_.JPG")
+    assert_equal ["baby nipples"], tags
+  end
 end
