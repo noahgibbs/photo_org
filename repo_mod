@@ -3,6 +3,9 @@
 require "optparse"
 require_relative "photo_repo"
 
+# TODO: tag breakdown mode
+# TODO: UI, possibly in new executable
+
 # Normally a tag spec is an alternation of operation (plus or minus) with token (a string.)
 # Strings preceded by a plus are required, while strings preceded by a minus are excluded.
 # Each photo has a list of tags, and to match they have to have all required tags and no
@@ -37,8 +40,6 @@ options = {
   link_type: nil,
   order: nil,
 }
-
-# TODO: UI, possibly in new executable
 
 OptionParser.new do |opts|
   opts.banner = <<USAGE

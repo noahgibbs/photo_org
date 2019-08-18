@@ -18,6 +18,7 @@ class PhotoRepo
     "symbolic" => "symbolic",
     "t" => "test",
     "test" => "test",
+    "none" => "none",
   }
   ORDERS = [ "any", "random" ]
 
@@ -123,9 +124,7 @@ class PhotoRepo
 
   # Return a proc representing the boolean expression or return nil if unparseable
   def bool_expr_to_proc(expr)
-    puts "bool_expr_to_proc: #{expr.inspect}"
     tokens = expr.split(BOOL_EXPR_REGEXP).flatten(1).map(&:strip)
-    puts "tokenized: #{tokens.inspect}"
 
     code_chunks = tokens.map do |token|
       # One of the known operators? Ruby code is the same as bool_expr code
@@ -163,7 +162,6 @@ class PhotoRepo
   end
 
   def ingest(dir, tags: [])
-    puts "Ingest dir: #{dir.inspect}, tags: #{tags.inspect}"
     Dir["#{dir}/*"].each do |file|
       final = file.split("/")[-1]
 
@@ -284,6 +282,8 @@ class PhotoRepo
         File.link(old_name, new_name)
       elsif @link_type == "test"
         puts "Would make link: #{new_name.inspect} -> #{old_name.inspect}"
+      elsif @link_type == "none"
+        # Do nothing
       else
         raise "Internal error! Unknown link type: #{@link_type.inspect}!"
       end
