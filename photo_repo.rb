@@ -175,9 +175,16 @@ class PhotoRepo
   end
 
   def update_links
+    # Remove previous links
+    Dir["#{@out_dir}/photo_*"].each do |link_filename|
+      File.unlink(link_filename)
+    end
+
+    index = 0
     each_photo do |filename, info|
       old_name = filename
-      new_name = "#{options[:out]}/#{info[:basename]}"
+      extension = File.extname(filename)
+      new_name = "#{@out_dir}/photo_#{index}#{extension}"
 
       if @link_type == "symbolic"
         File.symlink(old_name, new_name)
@@ -188,6 +195,7 @@ class PhotoRepo
       else
         raise "Internal error! Unknown link type: #{@link_type.inspect}!"
       end
+      index += 1
     end
   end
 

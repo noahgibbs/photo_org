@@ -14,9 +14,8 @@ def tag_spec_to_tags(tag_spec)
   required = []
   disallowed = []
 
-  tokens = tag_spec.split(/([-+ ])/).map(&:strip)
+  tokens = tag_spec.split(/([-+])/).map(&:strip)
   tokens.shift if tokens[0] == ""
-  #STDERR.puts "Tokens: #{tokens.inspect}"
   tokens.each_slice(2) do |op, token|
     if op == "+"
       required.push token unless token == "1"
@@ -27,7 +26,6 @@ def tag_spec_to_tags(tag_spec)
     end
   end
 
-  #STDERR.puts "tag_spec_to_tags: spec: #{tag_spec.inspect}, required: #{required.inspect}, disallowed: #{disallowed.inspect}"
   return required, disallowed
 end
 
@@ -38,7 +36,6 @@ options = {
   link_type: nil,
 }
 
-# TODO: detect duplicate filenames - don't overwrite
 # TODO: UI, possibly in new executable
 
 OptionParser.new do |opts|
