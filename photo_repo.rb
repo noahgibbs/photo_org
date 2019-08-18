@@ -115,9 +115,43 @@ class PhotoRepo
     return date, tags
   end
 
+  BOOL_EXPR_OPERATORS = ["|", "&", "!", "(", ")"].freeze
+  BOOL_EXPR_REGEXP = /(\||\&|\!|\(|\))/
+
+  # Return a proc representing the boolean expression or return nil if unparseable
+  def bool_expr_to_proc(expr)
+    puts "bool_expr_to_proc: #{expr.inspect}"
+    tokens = expr.split(BOOL_EXPR_REGEXP).flatten(1).map(&:strip)
+    puts "tokenized: #{tokens.inspect}"
+
+    code_chunks = tokens.map do |token|
+      # One of the known operators? Ruby code is the same as bool_expr code
+      if BOOL_EXPR_OPERATORS.include?(token)
+        token
+      else
+        # Not an operator? It should be a tag name
+        illegal_chars = token.gsub(/[a-zA-Z0-9 ]+/, "")
+        unless illegal_chars == ""
+          raise "Token #{token.inspect} contains illegal characters: #{illegal_chars.inspect}!"
+        end
+        "(info[\"tags\"].include? #{token.inspect})"
+      end
+    end
+
+    ruby_code = code_chunks.join(" ")
+    begin
+      p = eval "proc { |info| #{ruby_code}}"
+    rescue
+      # Error evaluating? Return nil
+      puts "Error evaluating Ruby proc from bool expr: #{expr.inspect}"
+      p = nil
+    end
+    p
+  end
+
   def always_ingest(dir)
     dir = File.expand_path(dir)
-    @ingest_dirs << dir
+    @ingest_dirs |= [ dir ]
     ingest(dir)
   end
 
@@ -159,6 +193,9 @@ class PhotoRepo
   end
 
   def add_filter(required: [], disallowed: [], bool_expr: [])
+    bool_expr.each do |be|
+      raise "Unparseable boolean expression: #{expr.inspect}!" unless bool_expr_to_proc(be)
+    end
     @filter["required"] |= required
     @filter["disallowed"] |= disallowed
     @filter["bool_expr"] |= bool_expr
@@ -172,8 +209,11 @@ class PhotoRepo
     @filter["disallowed"] = new_dis
   end
 
-  def set_bool_expr(new_br)
-    @filter["bool_expr"] = new_br
+  def set_bool_expr(new_be)
+    new_be.each do |be|
+      raise "Unparseable boolean expression: #{expr.inspect}!" unless bool_expr_to_proc(be)
+    end
+    @filter["bool_expr"] = new_be
   end
 
   def set_link_type(new_type)
@@ -182,10 +222,20 @@ class PhotoRepo
   end
 
   def each_photo
+    bool_proc = nil
+    if @filter["bool_expr"] == []
+      bool_proc = proc { true }
+    elsif @filter["bool_expr"].size == 1
+      bool_proc = bool_expr_to_proc(@filter["bool_expr"][0])
+    else
+      bool_procs = @filter["bool_expr"].map { |be| bool_expr_to_proc(be) }
+      bool_proc = proc { |file_info| bool_procs.all? { |bp| bp.call(file_info) } }
+    end
+
     @photos.each do |filename, info|
       if @filter["disallowed"].empty? || (info["tags"] & @filter["disallowed"]).empty?
         if @filter["required"].empty? || (info["tags"] & @filter["required"]).size == @filter["required"].size
-          if @filter["bool_expr"].empty? || true
+          if @filter["bool_expr"].empty? || bool_proc.call(info)
             yield(filename, info)
           end
         end

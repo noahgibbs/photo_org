@@ -32,7 +32,7 @@ end
 options = {
   out: ".",
   tag_spec: nil,
-  tag_boolean: nil,
+  tag_bool_expr: nil,
   ingest_dirs: [],
   link_type: nil,
 }
@@ -56,6 +56,10 @@ USAGE
 
   opts.on("-t TAGSPEC", "--tag-spec TAGSPEC", "Tag specification, use +tag1 -tag2 +tag3 +1 -0 or CLEAR to clear tags") do |t|
     options[:tag_spec] = t
+  end
+
+  opts.on("-b TAGBOOLEXPR", "--tag-boolean-expression TAGBOOLEXPR") do |t|
+    options[:tag_bool_expr] = t
   end
 
   opts.on("-i DIR", "--ingest DIR", "Add a directory to always link photos from or -i CLEAR to clear dirs") do |i|
@@ -96,6 +100,14 @@ if options[:tag_spec]
   else
     req, dis = tag_spec_to_tags options[:tag_spec]
     repo.add_filter(required: req, disallowed: dis)
+  end
+end
+
+if options[:tag_bool_expr]
+  if options[:tag_bool_expr] == "CLEAR"
+    repo.set_bool_expr([])
+  else
+    repo.add_filter(bool_expr: [options[:tag_bool_expr]])
   end
 end
 
