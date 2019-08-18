@@ -4,6 +4,8 @@ require "json"
 # TODO: date range filter
 # TODO: alias tags e.g. daughter -> daughters
 
+# TODO: better handling of multi-section underscores-and-text bits w/ no spaces - probably no tagging? Or tag all?
+
 # A PhotoRepo is associated with an output directory where it links photos and caches various information.
 # Various filters and settings are stored there, which makes it straightforward to update the
 # output repo when the input directories of photos are updated.
@@ -40,6 +42,7 @@ class PhotoRepo
     @filter = {
       "required" => [],
       "disallowed" => [],
+      "complex" => [],
     }
 
     if File.exist?("#{output_dir}/.prepo_cache.json")
@@ -155,9 +158,10 @@ class PhotoRepo
     end
   end
 
-  def add_filter(required: [], disallowed: [])
+  def add_filter(required: [], disallowed: [], complex: [])
     @filter["required"] |= required
     @filter["disallowed"] |= disallowed
+    @filter["complex"] |= complex
   end
 
   def set_required(new_req)
@@ -168,6 +172,10 @@ class PhotoRepo
     @filter["disallowed"] = new_dis
   end
 
+  def set_complex(new_com)
+    @filter["complex"] = new_com
+  end
+
   def set_link_type(new_type)
     raise "Unknown link type #{new_type.inspect} (allowed: #{LINK_ALIASES.keys.inspect})!" unless LINK_ALIASES[new_type]
     @link_type = LINK_ALIASES[new_type]
@@ -176,11 +184,19 @@ class PhotoRepo
   def each_photo
     @photos.each do |filename, info|
       if @filter["disallowed"].empty? || (info["tags"] & @filter["disallowed"]).empty?
-        if @filter["required"].empty? || !(info["tags"] & @filter["required"]).empty?
-          yield(filename, info)
+        if @filter["required"].empty? || (info["tags"] & @filter["required"]).size == @filter["required"].size
+          if @filter["complex"].empty? || true
+            yield(filename, info)
+          end
         end
       end
     end
+  end
+
+  def matching_photos
+    matching = []
+    each_photo { |filename, info| matching.push([filename, info]) }
+    matching
   end
 
   def update_links
@@ -190,7 +206,7 @@ class PhotoRepo
     end
 
     index = 0
-    each_photo do |filename, info|
+    matching_photos.each do |filename, info|
       old_name = filename
       extension = File.extname(filename)
       new_name = "#{@out_dir}/photo_#{index}#{extension}"
@@ -206,6 +222,7 @@ class PhotoRepo
       end
       index += 1
     end
+    puts "Updated #{index} links to photos..."
   end
 
   # Update the cache from cached dir data and/or the directory contents
@@ -214,6 +231,8 @@ class PhotoRepo
   # Not sure about using that to use cached state instead of reloading...
   def update_cache
     puts "Updating cache..."
+    @photos = {}
+    @tags = []
     @ingest_dirs.each do |i|
       ingest(i)
     end

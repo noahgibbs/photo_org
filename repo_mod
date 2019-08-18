@@ -32,6 +32,7 @@ end
 options = {
   out: ".",
   tag_spec: nil,
+  tag_boolean: nil,
   ingest_dirs: [],
   link_type: nil,
 }
