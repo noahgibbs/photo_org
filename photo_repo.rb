@@ -42,7 +42,7 @@ class PhotoRepo
     @filter = {
       "required" => [],
       "disallowed" => [],
-      "complex" => [],
+      "bool_expr" => [],
     }
 
     if File.exist?("#{output_dir}/.prepo_cache.json")
@@ -158,10 +158,10 @@ class PhotoRepo
     end
   end
 
-  def add_filter(required: [], disallowed: [], complex: [])
+  def add_filter(required: [], disallowed: [], bool_expr: [])
     @filter["required"] |= required
     @filter["disallowed"] |= disallowed
-    @filter["complex"] |= complex
+    @filter["bool_expr"] |= bool_expr
   end
 
   def set_required(new_req)
@@ -172,8 +172,8 @@ class PhotoRepo
     @filter["disallowed"] = new_dis
   end
 
-  def set_complex(new_com)
-    @filter["complex"] = new_com
+  def set_bool_expr(new_br)
+    @filter["bool_expr"] = new_br
   end
 
   def set_link_type(new_type)
@@ -185,7 +185,7 @@ class PhotoRepo
     @photos.each do |filename, info|
       if @filter["disallowed"].empty? || (info["tags"] & @filter["disallowed"]).empty?
         if @filter["required"].empty? || (info["tags"] & @filter["required"]).size == @filter["required"].size
-          if @filter["complex"].empty? || true
+          if @filter["bool_expr"].empty? || true
             yield(filename, info)
           end
         end
