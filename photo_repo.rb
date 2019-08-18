@@ -270,8 +270,7 @@ class PhotoRepo
       File.unlink(link_filename)
     end
 
-    index = 0
-    reordered(matching_photos).each do |filename, info|
+    reordered(matching_photos).each do |(filename, info), index|
       old_name = filename
       extension = File.extname(filename)
       new_name = "#{@out_dir}/photo_#{index}#{extension}"
@@ -287,9 +286,8 @@ class PhotoRepo
       else
         raise "Internal error! Unknown link type: #{@link_type.inspect}!"
       end
-      index += 1
     end
-    puts "Updated #{index} links to photos..."
+    puts "Updated #{matching_photos.size} links to photos..."
   end
 
   # Update the cache from cached dir data and/or the directory contents
