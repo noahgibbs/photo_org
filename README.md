@@ -20,6 +20,22 @@ excluded (not those photos.) The organiser can then produce a
 directory of links to the appropriate photos suitable for a
 screensaver program or a directory of desktop images.
 
+## Link Types
+
+Symbolic links make me more comfortable than hard links... But the Mac
+screensaver program doesn't recognize symlinked images, so you have to
+use hard links. You can also use the "test" link type to just print a
+message instead of making a real link.
+
+## Saved Incantation for Making a Repo
+
+Turn an empty directory at ~/Dropbox/PhotoRepo/output/Shanna_Orion/
+into a new photo repo for photos with multiple Shanna- or
+Orion-related tags and no "baby nipples" or "nsfw" tag, using hard
+links.
+
+* ./repo_mod ~/Dropbox/PhotoRepo/output/Shanna_Orion/ -i ~/Dropbox/PhotoRepo/Images\ Labeled -b "shanna|orion|orion pregnancy" -t "-baby nipples-nsfw" -l hard
+
 ## Saved Incantation for Later Implementation Work:
 
 * for file in *; do SetFile -m "$(exiftool -p '$CreateDate' -d '%m/%d/%Y %H:%M:%S'"$file")""$file"; done

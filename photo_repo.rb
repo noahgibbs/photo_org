@@ -10,7 +10,7 @@ require "json"
 # Various filters and settings are stored there, which makes it straightforward to update the
 # output repo when the input directories of photos are updated.
 class PhotoRepo
-  INTERNAL_FIELDS = ["ingest_dirs", "photos", "tags", "filter", "link_type"]
+  INTERNAL_FIELDS = ["ingest_dirs", "photos", "tags", "filter", "order", "link_type"]
   LINK_ALIASES = {
     "h" => "hard",
     "hard" => "hard",
@@ -19,6 +19,7 @@ class PhotoRepo
     "t" => "test",
     "test" => "test",
   }
+  ORDERS = [ "any", "random" ]
 
   attr_reader :successful_load
   attr_reader :out_dir
@@ -44,6 +45,8 @@ class PhotoRepo
       "disallowed" => [],
       "bool_expr" => [],
     }
+
+    @order = "any"
 
     if File.exist?("#{output_dir}/.prepo_cache.json")
       puts "Loading settings from cache in #{output_dir.inspect}..."
@@ -217,8 +220,13 @@ class PhotoRepo
   end
 
   def set_link_type(new_type)
-    raise "Unknown link type #{new_type.inspect} (allowed: #{LINK_ALIASES.keys.inspect})!" unless LINK_ALIASES[new_type]
+    raise "Unknown link type: #{new_type.inspect} (allowed: #{LINK_ALIASES.keys.inspect})!" unless LINK_ALIASES[new_type]
     @link_type = LINK_ALIASES[new_type]
+  end
+
+  def set_order(new_order)
+    raise "Unknown order: #{new_order.inspect} (allowed: #{ORDERS.inspect})!" unless ORDERS.include?(new_order)
+    @order = new_order
   end
 
   def each_photo
@@ -249,6 +257,15 @@ class PhotoRepo
     matching
   end
 
+  # This takes a list of filename/info array pairs and returns it in
+  # (potentially) a different order
+  def reordered(photo_name_info_list)
+    return photo_name_info_list if @order == "any"
+    return photo_name_info_list.sample(photo_name_info_list.size) if @order == "random"
+
+    raise "Unrecognized order: #{@order}!"
+  end
+
   def update_links
     # Remove previous links
     Dir["#{@out_dir}/photo_*"].each do |link_filename|
@@ -256,7 +273,7 @@ class PhotoRepo
     end
 
     index = 0
-    matching_photos.each do |filename, info|
+    reordered(matching_photos).each do |filename, info|
       old_name = filename
       extension = File.extname(filename)
       new_name = "#{@out_dir}/photo_#{index}#{extension}"

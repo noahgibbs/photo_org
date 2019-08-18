@@ -35,6 +35,7 @@ options = {
   tag_bool_expr: nil,
   ingest_dirs: [],
   link_type: nil,
+  order: nil,
 }
 
 # TODO: UI, possibly in new executable
@@ -50,8 +51,8 @@ directories are added to the current ones.
 
 USAGE
 
-  opts.on("-o OUTDIR", "--output OUTDIR", "Use OUTDIR for output, default is current dir") do |o|
-    options[:out] = o
+  opts.on("-o ORDER", "--order ORDER", "Use ORDER as output photo order - by default, no ordering") do |o|
+    options[:order] = o
   end
 
   opts.on("-t TAGSPEC", "--tag-spec TAGSPEC", "Tag specification, use +tag1 -tag2 +tag3 +1 -0 or CLEAR to clear tags") do |t|
@@ -72,7 +73,7 @@ USAGE
 end.parse!
 
 # No -o specified? One arg? It's a directory? Treat it as the output directory.
-if ARGV.size == 1 && File.exist?(ARGV[0]) && options[:out] == "."
+if ARGV.size == 1
   options[:out] = ARGV.pop
 end
 
@@ -113,6 +114,10 @@ end
 
 if options[:link_type]
   repo.set_link_type(options[:link_type])
+end
+
+if options[:order]
+  repo.set_order(options[:order])
 end
 
 repo.update_cache
