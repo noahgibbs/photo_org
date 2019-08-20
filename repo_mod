@@ -39,7 +39,10 @@ options = {
   ingest_dirs: [],
   link_type: nil,
   order: nil,
+  summary: nil,
 }
+
+SUMMARY_TYPES = [ "link_tags" ]
 
 OptionParser.new do |opts|
   opts.banner = <<USAGE
@@ -70,6 +73,11 @@ USAGE
 
   opts.on("--link-type TYPE", "Link type: symbolic(s) or hard(h) or test(t), default is symbolic") do |t|
     options[:link_type] = t
+  end
+
+  opts.on("--summary TYPE", "-s TYPE", "Print summary of links or cache after run, types: #{SUMMARY_TYPES.inspect}") do |t|
+    raise "Unknown summary type: #{t.inspect}! Allowed: #{SUMMARY_TYPES.inspect}." unless SUMMARY_TYPES.include?(t)
+    options[:summary] = t
   end
 end.parse!
 
@@ -123,3 +131,23 @@ end
 
 repo.update_cache
 repo.update_links
+
+if options[:summary]
+  if options[:summary] == "link_tags"
+    summary_tags = {}
+    repo.links.each do |old_name, new_name|
+      t = repo.photos[old_name]["tags"].sort.uniq
+      summary_tags[t] ||= 0
+      summary_tags[t] += 1
+    end
+
+    puts "Tag breakdown for linked photos:"
+    summary_tags.keys.sort.each do |tagset|
+      tagline = tagset.map { |s| "_#{s}_" }.join(" ")
+      puts "#{tagline}: #{summary_tags[tagset]}"
+    end
+    puts "======"
+  else
+    raise "Unknown summary type: #{options[:summary].inspect}!"
+  end
+end

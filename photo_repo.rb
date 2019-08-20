@@ -24,6 +24,7 @@ class PhotoRepo
 
   attr_reader :successful_load
   attr_reader :out_dir
+  attr_reader :links  # Don't cache this one in JSON
 
   INTERNAL_FIELDS.each { |field| attr_reader field.to_sym }
 
@@ -38,6 +39,7 @@ class PhotoRepo
 
     @photos = {}
     @tags = []
+    @links = {}
 
     @link_type = "symbolic"
 
@@ -269,12 +271,14 @@ class PhotoRepo
     Dir["#{@out_dir}/photo_*"].each do |link_filename|
       File.unlink(link_filename)
     end
+    @links = {}
 
     reordered(matching_photos).each.with_index do |(filename, info), index|
       old_name = filename
       extension = File.extname(filename)
       new_name = "#{@out_dir}/photo_#{index}#{extension}"
 
+      @links[old_name] = new_name
       if @link_type == "symbolic"
         File.symlink(old_name, new_name)
       elsif @link_type == "hard"
