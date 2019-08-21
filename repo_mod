@@ -135,16 +135,27 @@ repo.update_links
 if options[:summary]
   if options[:summary] == "link_tags"
     summary_tags = {}
+    top_level_tags = {}
     repo.links.each do |old_name, new_name|
       t = repo.photos[old_name]["tags"].sort.uniq
       summary_tags[t] ||= 0
       summary_tags[t] += 1
+      t.each do |one_tag|
+        top_level_tags[one_tag] ||= 0
+        top_level_tags[one_tag] += 1
+      end
     end
 
     puts "Tag breakdown for linked photos:"
     summary_tags.keys.sort.each do |tagset|
       tagline = tagset.map { |s| "_#{s}_" }.join(" ")
       puts "#{tagline}: #{summary_tags[tagset]}"
+    end
+    puts "======"
+
+    puts "Top-level tag breakdown:"
+    top_level_tags.keys.sort { |t1, t2| top_level_tags[t2] <=> top_level_tags[t1] }.each do |tag|
+      puts "#{tag}: #{top_level_tags[tag]}"
     end
     puts "======"
   else
