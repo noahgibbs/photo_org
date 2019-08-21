@@ -42,7 +42,7 @@ options = {
   summary: nil,
 }
 
-SUMMARY_TYPES = [ "link_tags" ]
+SUMMARY_TYPES = [ "link_tags", "photo_tags" ]
 
 OptionParser.new do |opts|
   opts.banner = <<USAGE
@@ -153,7 +153,33 @@ if options[:summary]
     end
     puts "======"
 
-    puts "Top-level tag breakdown:"
+    puts "Top-level tag breakdown for linked photos:"
+    top_level_tags.keys.sort { |t1, t2| top_level_tags[t2] <=> top_level_tags[t1] }.each do |tag|
+      puts "#{tag}: #{top_level_tags[tag]}"
+    end
+    puts "======"
+
+  elsif options[:summary] == "photo_tags"
+    summary_tags = {}
+    top_level_tags = {}
+    repo.photos.each do |filename, info|
+      t = info["tags"].sort.uniq
+      summary_tags[t] ||= 0
+      summary_tags[t] += 1
+      t.each do |one_tag|
+        top_level_tags[one_tag] ||= 0
+        top_level_tags[one_tag] += 1
+      end
+    end
+
+    puts "Tag breakdown for all photos:"
+    summary_tags.keys.sort.each do |tagset|
+      tagline = tagset.map { |s| "_#{s}_" }.join(" ")
+      puts "#{tagline}: #{summary_tags[tagset]}"
+    end
+    puts "======"
+
+    puts "Top-level tag breakdown for all photos:"
     top_level_tags.keys.sort { |t1, t2| top_level_tags[t2] <=> top_level_tags[t1] }.each do |tag|
       puts "#{tag}: #{top_level_tags[tag]}"
     end
