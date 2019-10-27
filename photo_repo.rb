@@ -78,7 +78,7 @@ class PhotoRepo
 
     scanned = name.scan(/\_([^_]+)\_/)
 
-    name.scan(/\_([^_]+)\_/).flatten(1).map(&:downcase)
+    name.scan(/\_([^_ ][^_]+[^_ ])\_/).flatten(1).map(&:downcase)
   end
 
   def self.file_parse(filename)
