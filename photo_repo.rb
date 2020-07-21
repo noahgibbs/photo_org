@@ -310,7 +310,7 @@ class PhotoRepo
     if @successful_load
       puts "Saving cache to #{@out_dir}/.prepo_cache.json"
       File.open("#{@out_dir}/.prepo_cache.json", "w") do |f|
-        f.print(JSON.dump internal_state)
+        f.print(JSON.pretty_generate internal_state)
       end
     end
   end
