@@ -38,6 +38,8 @@ links.
 
 ## Saved Incantation for Later Implementation Work:
 
-* for file in *; do SetFile -m "$(exiftool -p '$CreateDate' -d '%m/%d/%Y %H:%M:%S'"$file")""$file"; done
+```
+exiftool -d '%Y-%m-%d %H:%M:%S%%-03.c.%%e' '-filename<CreateDate' .
+```
 
 Related: use exiftool?
